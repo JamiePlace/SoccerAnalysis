@@ -3,18 +3,20 @@ library(lubridate)
 library(forcats)
 library(dplyr)
 library(tidyr)
+library(ggplot2)
 
 "%+%" <- function(...) paste0(...)
 
 WrangleData <- function(yr) {
     link <- .CreateLink(yr)
+
     df <- .ReadData(link) %>%
         .AddGW()
 }
 
 .ReadData <- function(link) {
     data <- readr::read_csv(
-        "http://www.football-data.co.uk/mmz4281/1920/E0.csv"
+        link
     )
 
     data <- data[, 1:24]
@@ -73,12 +75,15 @@ WrangleData <- function(yr) {
     for (week in weeks) {
         dat <- data %>% filter(gw == week)
 
-        tab <- base_table
+        tab <- table[table$gw == (week - 1), ]
         tab$gw <- week
 
         for (game in 1:nrow(dat)) {
-            ht <- dat$HomeTeam[game]
-            at <- dat$AwayTeam[game]
+
+
+            ht <- as.character(dat$HomeTeam[game])
+            at <- as.character(dat$AwayTeam[game])
+
 
             if (dat$FTR[game] == "H") {
                 htp <- 3
@@ -93,14 +98,33 @@ WrangleData <- function(yr) {
                 atp <- 1
             } 
 
-            tab$points[tab$team == ht] <- htp + table$points[table$team == ht & table$gw == (week - 1)] 
-            tab$points[tab$team == at] <- atp + table$points[table$team == at & table$gw == (week - 1)]
-        }
+            previous_hp <- table %>%
+                filter(team == ht) %>%
+                filter(gw == week - 1) %>%
+                select(points) %>%
+                pull()
 
+            previous_ap <- table %>%
+                filter(team == at) %>%
+                filter(gw == week - 1) %>%
+                select(points) %>%
+                pull()
+
+            tab$points[tab$team == ht & tab$gw == week] <- htp + previous_hp
+            tab$points[tab$team == at & tab$gw == week] <- atp + previous_ap
+        }
         table <- rbind(table, tab)
     }
 
-    table <- table[-which(table$gw == 0), ]
+    #table <- table %>%
+    #    filter(gw != 0)
+
+    return(table)
 }
 
-df <- WrangleData(20)
+df <- WrangleData(19)
+fpl_table <- .CreateTable(df)
+
+
+plt <- ggplot(fpl_table) +
+    geom_line(aes(x = gw, y = points, colour = team))

@@ -2,6 +2,7 @@ library(readr)
 library(lubridate)
 library(forcats)
 library(dplyr)
+library(stringr)
 library(tidyr)
 library(ggplot2)
 
@@ -11,7 +12,14 @@ WrangleData <- function(yr) {
     link <- .CreateLink(yr)
 
     df <- .ReadData(link) %>%
-        .AddGW()
+        .AddGW() %>%
+        mutate(
+            hgw = NA,
+            agw = NA,
+            gnum = 1:n()
+        )
+
+    #pl_table <- .CreateTable(df)
 }
 
 .ReadData <- function(link) {
@@ -19,18 +27,31 @@ WrangleData <- function(yr) {
         link
     )
 
-    data <- data[, 1:24]
+    cols_2_keep <- c(
+        "timestamp",
+        "HomeTeam",
+        "AwayTeam",
+        "FTHG",
+        "FTAG",
+        "FTR",
+        "HS",
+        "AS",
+        "HST",
+        "AST",
+        "HF",
+        "AF",
+        "HC",
+        "AC"
+    )
 
     data <- data %>%
-        select(-Div) %>%
-        mutate(timestamp = Date %+% " " %+% Time) %>%
-        mutate(timestamp = gsub("/", "-", timestamp)) %>%
-        mutate(timestamp = dmy_hms(timestamp)) %>%
-        select(-Date, -Time, -HTHG, -HTAG, -HTR, -Referee) %>%
-        select(timestamp, HomeTeam:AR) %>%
+        .ParseDates() %>%
+        select(all_of(cols_2_keep)) %>%
         mutate(season = max(year(timestamp))) %>%
         mutate(HomeTeam = as_factor(HomeTeam)) %>%
         mutate(AwayTeam = as_factor(AwayTeam))
+
+    names(data) <- tolower(names(data))
 
     return(data)
 }
@@ -39,7 +60,9 @@ WrangleData <- function(yr) {
     part1 <- "http://www.football-data.co.uk/mmz4281/"
     part2 <- "/E0.csv"
 
-    link <- part1 %+% (yr - 1) %+% yr %+% part2
+    prev_yr <- stringr::str_pad((as.numeric(yr) - 1), 2, "left", 0)
+
+    link <- part1 %+% prev_yr %+% yr %+% part2
 
     return(link)
 }
@@ -56,6 +79,7 @@ WrangleData <- function(yr) {
     data$gw <- gwdata$gw
 
     data <- data %>%
+        group_by(season) %>%
         mutate(gw = as_factor(gw))
     return(data)
 }
@@ -116,13 +140,21 @@ WrangleData <- function(yr) {
         table <- rbind(table, tab)
     }
 
-    #table <- table %>%
-    #    filter(gw != 0)
-
     return(table)
 }
 
-df <- WrangleData(19)
+.ParseDates <- function(data) {
+    data <- data %>%
+        mutate(timestamp = lubridate::dmy(Date))
+
+    return(data)
+}
+
+
+df <- WrangleData(20)
+
+View(head(df %>% filter(HomeTeam == "Liverpool" | AwayTeam == "Liverpool")))
+
 fpl_table <- .CreateTable(df)
 
 

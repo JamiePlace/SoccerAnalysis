@@ -292,33 +292,25 @@ class crossvalidate():
             plt.savefig(filepath, bbox_inches='tight')   
 
 # method of returning root of project
-class ProjectRoot():
-    @staticmethod
-    def project_root():
-        '''
-        Returns the path of the project root directory by
-        searching parent dirs for .git directory
-        this is a static method so call it like so:
-        ProjectRoot.project_root()     
-        '''
-        path = '.' + os.path.sep
-
-        i = 1
-        max_recursion = 10
-
-        while True:
-            if '.git' in os.listdir(path):
-                break
-            path = path + '..' + os.path.sep
-            i += 1
-
-            if i == max_recursion:
-                raise FileNotFoundError('Max attempts (' + \
-                    str(max_recursion) + \
-                        ') to find project root reached. ' + \
-                            'Is there a .git dir somewhere above the current path?')
-
-
-        path = os.path.abspath(path) + os.path.sep
-
-        return path 
+def project_root():
+    '''
+    Returns the path of the project root directory by
+    searching parent dirs for .git directory
+    this is a static method so call it like so:
+    ProjectRoot.project_root()     
+    '''
+    path = '.' + os.path.sep
+    i = 1
+    max_recursion = 10
+    while True:
+        if '.git' in os.listdir(path):
+            break
+        path = path + '..' + os.path.sep
+        i += 1
+        if i == max_recursion:
+            raise FileNotFoundError('Max attempts (' + \
+                str(max_recursion) + \
+                    ') to find project root reached. ' + \
+                        'Is there a .git dir somewhere above the current path?')
+    path = os.path.abspath(path) + os.path.sep
+    return path 

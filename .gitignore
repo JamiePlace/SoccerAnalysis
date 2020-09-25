@@ -40,3 +40,5 @@ vignettes/*.pdf
 .Rprofile
 
 .vscode/*
+
+__pycache__

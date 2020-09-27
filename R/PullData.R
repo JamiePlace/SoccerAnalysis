@@ -547,4 +547,4 @@ years_of_data <- str_pad(years_of_data, width = 2, side = "left", pad = 0)
 df <- map_dfr(years_of_data, WrangleData)
 
 # save the data to disk
-write_csv(df, ".\\data\\csv\\premierleague_data.csv")
+write_csv(df, "data\\csv\\premierleague_data.csv")
